@@ -4,6 +4,7 @@ TIMING=../../../../../wolfbench/timing.py
 
 all:
 	make clean	
+	make EXTRA_SUFFIX=.PH CUSTOMFLAGS="-inline-heuristic" test
 	make EXTRA_SUFFIX=.None CUSTOMFLAGS="-no-inline -no-preopt -no-postopt"  test
 	make EXTRA_SUFFIX=.O CUSTOMFLAGS="-no-inline" test	
 	make EXTRA_SUFFIX=.I CUSTOMFLAGS="-no-preopt -no-postopt"  test	
@@ -22,6 +23,7 @@ stats:
 	python3 $(FULLSTATS) Inlined
 	python3 $(FULLSTATS) ConstArg
 	python3 $(FULLSTATS) SizeReq
+	python3 $(FULLSTATS) PersHeuristic
 	python3 $(TIMING)
 	
 	

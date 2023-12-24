@@ -42,7 +42,7 @@ using namespace llvm;
 
 int Summarize(Module *M)
 {
-    fprintf(stderr,"Hello!\n");
+    fprintf(stderr,"Hello! My name is LightYear, Buzz LightYear\n");
     return 0;
 }
 

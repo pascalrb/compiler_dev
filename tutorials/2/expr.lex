@@ -28,7 +28,8 @@ using namespace llvm;
 [ \n\t]  // ignore a space, a tab, a newline
 
 [Rr][0-9]+ {
-            yylval.reg = atoi(yytext+1);  return REG;
+            yylval.reg = atoi(yytext+1);  
+            return REG;
           }
 [0-9]+    { 
             yylval.imm = atoi(yytext);

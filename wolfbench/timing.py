@@ -75,17 +75,32 @@ print(s)
 benchs = list(Ids.keys())
 benchs.sort()
 
+#for i in benchs:
+#    s = str(i).ljust(20,'.')
+#    for k in keys:
+#        if i in Stats[k]:
+#            if Normalize==True and Normalize_key in Stats :
+#                if Stats['.None'][i] > 0:
+#                    s += str(Stats[k][i]/Stats[Normalize_key][i])[0:3].rjust(10,'.')
+#                else:
+#                    s += str('x').rjust(10,'.');
+#            else:
+#                s += str(Stats[k][i]).rjust(10,'.')
+#        else:
+#            s += '(missing)'.rjust(10,'.')
+#    print(s)
+
 for i in benchs:
-    s = str(i).ljust(20,'.')
+    s = str(i).ljust(20,'_')
     for k in keys:
         if i in Stats[k]:
             if Normalize==True and Normalize_key in Stats :
                 if Stats['.None'][i] > 0:
-                    s += str(Stats[k][i]/Stats[Normalize_key][i])[0:3].rjust(10,'.')
+                    s += str(Stats[k][i]/Stats[Normalize_key][i])[0:3].rjust(10,'_')
                 else:
-                    s += str('x').rjust(10,'.');
+                    s += str('x').rjust(10,'_');
             else:
-                s += str(Stats[k][i]).rjust(10,'.')
+                s += str(Stats[k][i]).rjust(10,'_')
         else:
-            s += '(missing)'.rjust(10,'.')
+            s += '(missing)'.rjust(10,'_')
     print(s)

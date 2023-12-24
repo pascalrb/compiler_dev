@@ -109,7 +109,7 @@ static void countInstructions(Module *M, llvm::Statistic &nInstr) {
   for (auto i = M->begin(); i != M->end(); i++) {
     for (auto j = i->begin(); j != i->end(); j++) {
       for (auto k = j->begin(); k != j->end(); k++) {
-	nInstr++;
+	      nInstr++;
       }
     }
   }
@@ -236,21 +236,155 @@ static void print_csv_file(std::string outputfile)
 
 static llvm::Statistic Inlined = {"", "Inlined", "Inlined a call."};
 static llvm::Statistic ConstArg = {"", "ConstArg", "Call has a constant argument."};
-static llvm::Statistic SizeReq = {"", "SizeReq", "Call has a constant argument."};
-
+static llvm::Statistic SizeReq = {"", "SizeReq", "Call meets size requirement."};
+static llvm::Statistic AdLibHeuristic = {"", "AdLibHeuristic", "Call meets personal heuristic requirement."};
 
 #include "llvm/Transforms/Utils/Cloning.h"
 
+// Function to perform function inlining
 static void DoInlining(Module *M) {
-  // Implement a function to perform function inlining
 
-  /*
-    CallInst *CI = ....; // a call instruction
-    InlineFunctionInfo IFI;
-    InlineFunction(*CI, IFI);
-  */
+  Inlined = 0;
+  ConstArg = 0;
+  SizeReq = 0;
+  AdLibHeuristic = 0;
 
+  std::map<std::string, std::vector<CallInst*> > funcCallsToInline;
+  int initialInstrCount = 0;
+
+  //Traversing the entire program, adding function calls to inline into a worklist
+  for (auto func_iter = M->begin(); func_iter != M->end(); func_iter++) {
+    //llvm::Module::iterator = FunctionListType::iterator
+
+    for (auto bb_iter = func_iter->begin(); bb_iter != func_iter->end(); bb_iter++) {
+      //llvm::BasicBlock
+
+      for (auto instr_iter = bb_iter->begin(); instr_iter != bb_iter->end(); instr_iter++) {
+        //llvm::Instruction
+        initialInstrCount++;
+
+        Instruction &I = *instr_iter;
+
+        CallInst *CI = dyn_cast<CallInst>(&I);
+        if(CI){
+          Function *F = CI->getCalledFunction();
+          if (F) {
+            InlineFunctionInfo IFI; 
+
+            InlineResult IR = isInlineViable(*F);   
+            if (IR.isSuccess()) {
+              funcCallsToInline[F->getName().str()].push_back(CI);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Traversing the worklist, performing the inlining
+  InlineFunctionInfo IFI;
+  int inlineCalleeSize;
+  int currentProgramSize = initialInstrCount;
+  int growthFactorProgramSizeLimit;
+  bool constPresent;
+  int growthFactorLim = 3;
+  int numOfCallsToFunc = 7; /* based on data gathered, most funcs 
+                               get called less than 7 times, 
+                               the exceptions >20, sometimes >50 */ 
+  int funcBodySizeMax1 = 75;
+  int funcBodySizeMax2 = 200; 
+
+  std::map<std::string, std::vector<CallInst*> >:: iterator funcCallsToInline_it;
+  for(funcCallsToInline_it = funcCallsToInline.begin(); funcCallsToInline_it != funcCallsToInline.end(); funcCallsToInline_it++){
+
+
+    if(InlineHeuristic){
+    //Ad Libitum heuristic 
+      growthFactorProgramSizeLimit = initialInstrCount * growthFactorLim;
+
+      for(int i = 0; i < funcCallsToInline_it->second.size(); i++){
+        Function *Callee = funcCallsToInline_it->second[i]->getCalledFunction();
+        inlineCalleeSize = Callee->getInstructionCount();
+
+        constPresent = false;
+
+        //always inline if there is a constant in the func argument, while 
+        // we're still below the growth factor limit
+        for (auto &Arg : funcCallsToInline_it->second[i]->args()) {
+          if(isa<Constant>(&Arg)){
+            if((currentProgramSize + inlineCalleeSize) <= growthFactorProgramSizeLimit){
+              InlineFunction(*funcCallsToInline_it->second[i], IFI);
+
+              currentProgramSize += inlineCalleeSize;              
+              AdLibHeuristic++;
+              Inlined++;
+              constPresent = true;
+              break;
+            }
+          }
+        }if (!constPresent){
+          //if none of func's argument is a constant, do further checks before inlining 
+
+          if(funcCallsToInline_it->second.size() < numOfCallsToFunc){
+            // if the function doesn't get called that often 
+
+            if(inlineCalleeSize < funcBodySizeMax2){
+              if((currentProgramSize + inlineCalleeSize) <= growthFactorProgramSizeLimit){
+                InlineFunction(*funcCallsToInline_it->second[i], IFI);
+
+                currentProgramSize += inlineCalleeSize;              
+                AdLibHeuristic++;
+                Inlined++;
+              }
+            }
+          }else{
+            if(inlineCalleeSize < funcBodySizeMax1){
+              if((currentProgramSize + inlineCalleeSize) <= growthFactorProgramSizeLimit){
+                InlineFunction(*funcCallsToInline_it->second[i], IFI);
+
+                currentProgramSize += inlineCalleeSize;              
+                AdLibHeuristic++;
+                Inlined++;
+              }
+            }
+          }
+        }
+      }
+
+    }else{
+      //basic inling support
+      growthFactorProgramSizeLimit = initialInstrCount * InlineGrowthFactor; 
+
+      for(int i = 0; i < funcCallsToInline_it->second.size(); i++){
+        Function *Callee = funcCallsToInline_it->second[i]->getCalledFunction();
+        inlineCalleeSize = Callee->getInstructionCount();
+
+        if(inlineCalleeSize < InlineFunctionSizeLimit){
+          if((currentProgramSize + inlineCalleeSize) <= growthFactorProgramSizeLimit){
+            if(InlineConstArg){
+
+              for (auto &Arg : funcCallsToInline_it->second[i]->args()) {
+                if(isa<Constant>(&Arg)){
+                  InlineFunction(*funcCallsToInline_it->second[i], IFI);
+                  currentProgramSize += inlineCalleeSize;
+
+                  ConstArg++;
+                  Inlined++;
+
+                  break;
+                }
+              }
+
+            }else{
+              InlineFunction(*funcCallsToInline_it->second[i], IFI);
+              currentProgramSize += inlineCalleeSize;
+
+              SizeReq++;
+              Inlined++;
+            }
+          }
+        }
+      }
+    }
+  }
 }
-
-
-
