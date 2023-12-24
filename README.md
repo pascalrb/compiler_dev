@@ -5,6 +5,10 @@ forked from ncstate_ece566_spring2023 by Prof. [James Tuck](https://ece.ncsu.edu
 
 
 #           Added Projects:
+# Compiler Development
+Repo for compiler development practice and analysis. Code generation and code optimization.
+
+
 # Matrix Operations Compiler (p1)
 Matrix operations: 
 matrix multiplication, division, addition, substraction, transpose, inversion, reduce, determinant
