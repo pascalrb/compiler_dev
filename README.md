@@ -16,9 +16,9 @@ Back-end code generation: LLVM infrastructure
 
 ## Optimization Passes (p2)
 Optimizations:
-Common-Subexpression Elimination (CSE)
-Load/Store redundancy check simplification 
-Dead Code Elimination (DCE)
+- Common-Subexpression Elimination (CSE)
+- Load/Store redundancy check simplification 
+- Dead Code Elimination (DCE)
 
 
 ## Function Inlining Optimization Heuristics Analysis (p3)
